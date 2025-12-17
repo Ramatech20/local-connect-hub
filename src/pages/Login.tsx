@@ -1,11 +1,40 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/context/AuthProvider";
+import { toast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+
+  const schema = z.object({
+    email: z.string().min(1, "Email is required").email("Invalid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+  });
+
+  type FormValues = z.infer<typeof schema>;
+
+  const { register, handleSubmit, formState } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+  });
+
+  const { signIn } = useAuth();
+
+  const onSubmit = async (values: FormValues) => {
+    const res = await signIn(values.email, values.password);
+    if (res.error) {
+      toast({ title: "Login failed", description: res.error.message });
+      return;
+    }
+    toast({ title: "Logged in", description: "Welcome back!" });
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -43,7 +72,7 @@ const Login = () => {
             Welcome back! Please enter your details
           </p>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
                 Email Address
@@ -54,6 +83,7 @@ const Login = () => {
                   className="pl-10"
                   type="email"
                   placeholder="Enter your email"
+                  {...register("email")}
                 />
               </div>
             </div>
@@ -68,6 +98,7 @@ const Login = () => {
                   className="pl-10 pr-10"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
+                  {...register("password")}
                 />
                 <button
                   type="button"
@@ -99,8 +130,8 @@ const Login = () => {
               </Link>
             </div>
 
-            <Button className="w-full" size="lg">
-              Log In
+            <Button className="w-full" size="lg" type="submit">
+              {formState.isSubmitting ? "Signing in..." : "Log In"}
             </Button>
           </form>
 

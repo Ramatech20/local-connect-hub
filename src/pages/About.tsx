@@ -100,7 +100,7 @@ const About = () => {
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
                   Huduma started in 2022 when our founders experienced firsthand the challenges 
-                  of finding reliable service providers in Nairobi. After countless frustrating 
+                  of finding reliable service providers in Eldoret. After countless frustrating 
                   experiences with unreliable workers and unclear pricing, they decided to build 
                   a solution.
                 </p>
@@ -126,7 +126,7 @@ const About = () => {
               />
               <div className="absolute -bottom-6 -left-6 bg-accent text-accent-foreground p-6 rounded-2xl shadow-lg">
                 <p className="text-3xl font-bold">2022</p>
-                <p className="text-sm">Founded in Nairobi</p>
+                <p className="text-sm">Founded in Eldoret</p>
               </div>
             </div>
           </div>

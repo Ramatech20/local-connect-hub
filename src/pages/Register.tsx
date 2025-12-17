@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, Building } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useAuth } from "@/context/AuthProvider";
+import { toast } from "@/hooks/use-toast";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -11,6 +16,34 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<"customer" | "provider">(isProvider ? "provider" : "customer");
   const [step, setStep] = useState(1);
+  const navigate = useNavigate();
+
+  const schema = z.object({
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().min(1, "Email is required").email("Invalid email"),
+    phone: z.string().min(1, "Phone is required"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+  });
+
+  type FormValues = z.infer<typeof schema>;
+
+  const { register, handleSubmit, formState } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { firstName: "", lastName: "", email: "", phone: "", password: "" },
+  });
+
+  const { signUp } = useAuth();
+
+  const submitCustomer = async (data: FormValues) => {
+    const res = await signUp(data.email, data.password);
+    if (res.error) {
+      toast({ title: "Sign up failed", description: res.error.message });
+      return;
+    }
+    toast({ title: "Account created", description: "Check your email to confirm your account." });
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -57,7 +90,7 @@ const Register = () => {
           </div>
 
           {step === 1 && (
-            <form className="space-y-4 animate-fade-in">
+            <form className="space-y-4 animate-fade-in" onSubmit={handleSubmit(submitCustomer)}>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -65,14 +98,14 @@ const Register = () => {
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input className="pl-10" placeholder="John" />
+                    <Input className="pl-10" placeholder="John" {...register("firstName")} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Last Name
                   </label>
-                  <Input placeholder="Doe" />
+                  <Input placeholder="Doe" {...register("lastName")} />
                 </div>
               </div>
 
@@ -82,7 +115,7 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input className="pl-10" type="email" placeholder="john@example.com" />
+                  <Input className="pl-10" type="email" placeholder="john@example.com" {...register("email")} />
                 </div>
               </div>
 
@@ -90,23 +123,24 @@ const Register = () => {
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Phone Number
                 </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input className="pl-10" placeholder="+254 7XX XXX XXX" />
-                </div>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input className="pl-10" placeholder="+254 7XX XXX XXX" {...register("phone")} />
+                  </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Password
                 </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    className="pl-10 pr-10"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
-                  />
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      className="pl-10 pr-10"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a strong password"
+                      {...register("password")}
+                    />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}

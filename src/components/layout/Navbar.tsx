@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { Menu, X, User, ChevronDown, Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -18,6 +19,12 @@ const Navbar = () => {
     if (href === "/") return location.pathname === "/";
     return location.pathname.startsWith(href);
   };
+
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const currentTheme = theme === "system" ? resolvedTheme : theme;
+  const toggleTheme = () => setTheme(currentTheme === "dark" ? "light" : "dark");
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-b border-border">
@@ -46,8 +53,24 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Desktop Auth Buttons */}
+          {/* Desktop Auth Buttons + Theme Toggle */}
           <div className="hidden lg:flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="p-2 rounded-md text-foreground hover:bg-muted/10"
+            >
+              {mounted ? (
+                currentTheme === "dark" ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )
+              ) : (
+                <Sun className="w-5 h-5 opacity-0" />
+              )}
+            </button>
+
             <Link to="/login">
               <Button variant="ghost" size="sm">
                 Log In
@@ -86,6 +109,26 @@ const Navbar = () => {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
+                <div className="flex items-center gap-2 px-4">
+                  <button
+                    onClick={() => {
+                      toggleTheme();
+                      setMobileMenuOpen(false);
+                    }}
+                    aria-label="Toggle theme"
+                    className="p-2 rounded-md text-foreground hover:bg-muted/10"
+                  >
+                    {mounted ? (
+                      currentTheme === "dark" ? (
+                        <Sun className="w-5 h-5" />
+                      ) : (
+                        <Moon className="w-5 h-5" />
+                      )
+                    ) : (
+                      <Sun className="w-5 h-5 opacity-0" />
+                    )}
+                  </button>
+                </div>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
                   <Button variant="outline" className="w-full">
                     Log In
