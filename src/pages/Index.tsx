@@ -1,25 +1,32 @@
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { 
+  Search, Star, MapPin, ArrowRight, CheckCircle, Shield, ThumbsUp, 
+  Wrench, Zap, Sparkles, Car, Scissors, Monitor, Camera, GraduationCap,
+  Users, Award, Clock, BadgeCheck
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, MapPin, Wrench, Zap, Sparkles, Car, Scissors, Monitor, Camera, GraduationCap, CheckCircle, ArrowRight, Shield, Clock, ThumbsUp } from "lucide-react";
-import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
+import { EnhancedProviderCard, Provider } from "@/components/cards/EnhancedProviderCard";
 import CategoryCard from "@/components/cards/CategoryCard";
-import ProviderCard from "@/components/cards/ProviderCard";
 import TestimonialCard from "@/components/cards/TestimonialCard";
+import { LocationSelector } from "@/components/location/LocationSelector";
+import { TrustBadgesGroup } from "@/components/badges/TrustBadge";
 import heroImage from "@/assets/hero-services.jpg";
 
 const categories = [
+  { name: "Cleaning", icon: Sparkles, count: 156, href: "/services?category=cleaning" },
+  { name: "Tutoring", icon: GraduationCap, count: 112, href: "/services?category=tutoring" },
+  { name: "Repair", icon: Wrench, count: 224, href: "/services?category=repair" },
+  { name: "Beauty & Salon", icon: Scissors, count: 203, href: "/services?category=salon" },
+  { name: "Fitness", icon: Users, count: 89, href: "/services?category=fitness" },
   { name: "Plumbing", icon: Wrench, count: 124, href: "/services?category=plumbing" },
   { name: "Electrical", icon: Zap, count: 98, href: "/services?category=electrical" },
-  { name: "Cleaning", icon: Sparkles, count: 156, href: "/services?category=cleaning" },
-  { name: "Mechanics", icon: Car, count: 87, href: "/services?category=mechanics" },
-  { name: "Salon & Beauty", icon: Scissors, count: 203, href: "/services?category=salon" },
   { name: "IT & Tech", icon: Monitor, count: 76, href: "/services?category=tech" },
-  { name: "Photography", icon: Camera, count: 64, href: "/services?category=photography" },
-  { name: "Tutoring", icon: GraduationCap, count: 112, href: "/services?category=tutoring" },
 ];
 
-const featuredProviders = [
+const featuredProviders: Provider[] = [
   {
     id: "1",
     name: "John Kamau",
@@ -28,9 +35,15 @@ const featuredProviders = [
     rating: 4.9,
     reviewCount: 127,
     location: "Westlands, Nairobi",
-    price: "KSh 1,500",
+    price: "KES 1,500",
     isVerified: true,
+    isIdVerified: true,
+    isBackgroundChecked: true,
+    isTopRated: true,
     isFeatured: true,
+    completionRate: 98,
+    responseTime: "<2hrs",
+    availableToday: true,
   },
   {
     id: "2",
@@ -40,9 +53,14 @@ const featuredProviders = [
     rating: 4.8,
     reviewCount: 89,
     location: "Kilimani, Nairobi",
-    price: "KSh 2,000",
+    price: "KES 2,000",
     isVerified: true,
+    isIdVerified: true,
+    isBackgroundChecked: true,
     isFeatured: true,
+    completionRate: 96,
+    responseTime: "<1hr",
+    availableToday: true,
   },
   {
     id: "3",
@@ -52,9 +70,12 @@ const featuredProviders = [
     rating: 4.7,
     reviewCount: 156,
     location: "Industrial Area, Nairobi",
-    price: "KSh 2,500",
+    price: "KES 2,500",
     isVerified: true,
+    isIdVerified: true,
     isFeatured: false,
+    completionRate: 94,
+    responseTime: "<3hrs",
   },
   {
     id: "4",
@@ -64,9 +85,15 @@ const featuredProviders = [
     rating: 4.9,
     reviewCount: 234,
     location: "Karen, Nairobi",
-    price: "KSh 1,000",
+    price: "KES 1,000",
     isVerified: true,
+    isIdVerified: true,
+    isBackgroundChecked: true,
+    isTopRated: true,
     isFeatured: true,
+    completionRate: 99,
+    responseTime: "<30min",
+    availableToday: true,
   },
 ];
 
@@ -97,134 +124,163 @@ const testimonials = [
 const howItWorks = [
   {
     step: 1,
-    title: "Search for a Service",
-    description: "Browse through our categories or search for the specific service you need in your area.",
+    title: "Find a Service",
+    description: "Browse categories or search for the service you need in your area.",
     icon: Search,
   },
   {
     step: 2,
-    title: "Choose a Provider",
-    description: "Compare verified providers based on ratings, reviews, and pricing to find your perfect match.",
+    title: "Book a Provider",
+    description: "Compare verified providers, check ratings, and book your preferred time.",
     icon: CheckCircle,
   },
   {
     step: 3,
-    title: "Book & Pay Securely",
-    description: "Select your preferred date and time, then pay securely through M-Pesa or card.",
-    icon: Shield,
-  },
-  {
-    step: 4,
-    title: "Get Quality Service",
-    description: "Sit back and let the professional handle your task. Rate them after completion.",
+    title: "Enjoy Quality Service",
+    description: "Get professional service and pay securely via M-Pesa or card.",
     icon: ThumbsUp,
   },
 ];
 
+const trustStats = [
+  { value: "5,000+", label: "Verified Professionals", icon: Users },
+  { value: "98%", label: "Satisfaction Rate", icon: ThumbsUp },
+  { value: "50,000+", label: "Jobs Completed", icon: Award },
+  { value: "<2hrs", label: "Avg. Response Time", icon: Clock },
+];
+
 const Index = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCity, setSelectedCity] = useState("nairobi");
+  const [selectedEstate, setSelectedEstate] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedCity) params.set("city", selectedCity);
+    if (selectedEstate) params.set("estate", selectedEstate);
+    navigate(`/services?${params.toString()}`);
+  };
+
+  const handleLocationChange = (city: string, estate: string) => {
+    setSelectedCity(city);
+    setSelectedEstate(estate);
+  };
+
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center gradient-hero overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={heroImage}
-            alt="Professional services"
-            className="w-full h-full object-cover opacity-10"
+      <section className="relative min-h-[85vh] flex items-center overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={heroImage} 
+            alt="Professional services" 
+            className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/95 to-background/80" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40" />
         </div>
-        
-        <div className="container-custom relative z-10 py-20">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-up">
-              <Shield className="w-4 h-4" />
-              <span>Trusted by 10,000+ Kenyans</span>
+
+        <div className="container relative z-10 py-16 md:py-24">
+          <div className="max-w-3xl space-y-8">
+            {/* Trust indicator */}
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
+              <Shield className="h-4 w-4" />
+              <span>Kenya's Most Trusted Service Marketplace</span>
             </div>
-            
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 animate-fade-up animation-delay-100">
-              Find Trusted Local
-              <span className="text-gradient block">Service Providers</span>
+
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+              Find Verified Local{" "}
+              <span className="text-primary">Service Providers</span>{" "}
+              Near You
             </h1>
             
-            <p className="text-lg lg:text-xl text-muted-foreground mb-8 max-w-2xl animate-fade-up animation-delay-200">
-              Connect with verified plumbers, electricians, cleaners, and more in your neighborhood. 
-              Quality services, fair prices, complete peace of mind.
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl">
+              Connect with trusted professionals in Nairobi, Mombasa, Kisumu, and more. 
+              Book cleaners, tutors, mechanics, and other services with confidence.
             </p>
 
-            {/* Search Bar */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-fade-up animation-delay-300">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="What service do you need?"
-                  className="pl-12 h-14 text-base bg-card border-border rounded-xl"
-                />
+            {/* Search Form */}
+            <form onSubmit={handleSearch} className="space-y-4">
+              <div className="bg-card/80 backdrop-blur-md rounded-2xl p-4 md:p-6 shadow-2xl border border-border/50">
+                <div className="space-y-4">
+                  {/* Location selector */}
+                  <LocationSelector 
+                    variant="hero"
+                    onLocationChange={handleLocationChange}
+                    defaultCity="nairobi"
+                  />
+                  
+                  {/* Search input */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Search for cleaners, plumbers, tutors..."
+                        className="pl-12 h-12 bg-background/80 border-border/50"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" size="lg" className="h-12 px-8">
+                      Search Services
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="relative flex-1 sm:max-w-[240px]">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Location"
-                  defaultValue="Nairobi"
-                  className="pl-12 h-14 text-base bg-card border-border rounded-xl"
-                />
-              </div>
-              <Button variant="hero" className="h-14 px-8">
-                <Search className="w-5 h-5 mr-2" />
-                Search
-              </Button>
-            </div>
+            </form>
 
-            {/* Trust Badges */}
-            <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground animate-fade-up animation-delay-400">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-success" />
-                <span>Verified Providers</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
-                <span>Secure Payments</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-accent" />
-                <span>Same Day Service</span>
-              </div>
+            {/* Trust stats below search */}
+            <div className="flex flex-wrap gap-6 pt-4">
+              {trustStats.map((stat) => (
+                <div key={stat.label} className="flex items-center gap-2">
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <stat.icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* Categories Section */}
-      <section className="py-20 bg-background">
-        <div className="container-custom">
+      <section className="py-16 md:py-24 bg-muted/30">
+        <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Browse Service Categories
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              From home repairs to personal care, find the right professional for any job
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Find verified professionals across all major service categories in your area
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
-            {categories.map((category, index) => (
-              <div
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
+            {categories.map((category) => (
+              <CategoryCard
                 key={category.name}
-                className="animate-fade-up"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <CategoryCard {...category} />
-              </div>
+                name={category.name}
+                icon={category.icon}
+                count={category.count}
+                href={category.href}
+              />
             ))}
           </div>
 
           <div className="text-center mt-10">
             <Link to="/services">
               <Button variant="outline" size="lg">
-                View All Services
-                <ArrowRight className="w-4 h-4 ml-2" />
+                View All Categories
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
@@ -232,121 +288,128 @@ const Index = () => {
       </section>
 
       {/* Featured Providers Section */}
-      <section className="py-20 bg-secondary/30">
-        <div className="container-custom">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-12">
+      <section className="py-16 md:py-24">
+        <div className="container">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
             <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                Top Rated Providers
+              <div className="inline-flex items-center gap-2 text-primary text-sm font-medium mb-2">
+                <BadgeCheck className="h-4 w-4" />
+                <span>Verified & Trusted</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold">
+                Top Rated Professionals
               </h2>
-              <p className="text-lg text-muted-foreground">
-                Handpicked professionals with excellent reviews
+              <p className="text-muted-foreground mt-2">
+                Handpicked providers with excellent reviews and verified credentials
               </p>
             </div>
             <Link to="/services">
-              <Button variant="outline">
-                See All Providers
-                <ArrowRight className="w-4 h-4 ml-2" />
+              <Button variant="ghost" className="group">
+                View All Providers
+                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProviders.map((provider, index) => (
-              <div
-                key={provider.id}
-                className="animate-fade-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <ProviderCard {...provider} />
-              </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredProviders.map((provider) => (
+              <EnhancedProviderCard key={provider.id} provider={provider} />
             ))}
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-background">
-        <div className="container-custom">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+      <section className="py-16 md:py-24 bg-primary/5">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               How Huduma Works
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Getting quality service is as easy as 1-2-3-4
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Book trusted local services in three simple steps
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {howItWorks.map((item, index) => (
-              <div
-                key={item.step}
-                className="text-center animate-fade-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="relative mb-6">
-                  <div className="w-20 h-20 mx-auto rounded-2xl gradient-primary flex items-center justify-center shadow-glow">
-                    <item.icon className="w-10 h-10 text-primary-foreground" />
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {howItWorks.map((step, index) => (
+              <div key={step.step} className="relative">
+                {index < howItWorks.length - 1 && (
+                  <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-border" />
+                )}
+                <div className="text-center space-y-4">
+                  <div className="relative inline-flex">
+                    <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
+                      <step.icon className="h-10 w-10 text-primary" />
+                    </div>
+                    <span className="absolute -top-2 -right-2 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">
+                      {step.step}
+                    </span>
                   </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-sm font-bold">
-                    {item.step}
-                  </div>
+                  <h3 className="text-xl font-semibold">{step.title}</h3>
+                  <p className="text-muted-foreground">{step.description}</p>
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-muted-foreground">
-                  {item.description}
-                </p>
               </div>
             ))}
+          </div>
+
+          {/* Payment trust signals */}
+          <div className="mt-16 text-center">
+            <p className="text-sm text-muted-foreground mb-4">Secure payments via</p>
+            <div className="flex items-center justify-center gap-6 flex-wrap">
+              <div className="flex items-center gap-2 bg-green-500/10 text-green-700 px-4 py-2 rounded-full font-medium">
+                <span className="text-lg">📱</span> M-Pesa
+              </div>
+              <div className="flex items-center gap-2 bg-blue-500/10 text-blue-700 px-4 py-2 rounded-full font-medium">
+                <span className="text-lg">💳</span> Card Payments
+              </div>
+              <div className="flex items-center gap-2 bg-yellow-500/10 text-yellow-700 px-4 py-2 rounded-full font-medium">
+                <Shield className="h-4 w-4" /> Payment Protected
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-secondary/30">
-        <div className="container-custom">
+      <section className="py-16 md:py-24">
+        <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               What Our Customers Say
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Join thousands of satisfied customers across Kenya
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={testimonial.name}
-                className="animate-fade-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <TestimonialCard {...testimonial} />
-              </div>
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {testimonials.map((testimonial) => (
+              <TestimonialCard key={testimonial.name} {...testimonial} />
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 gradient-primary">
-        <div className="container-custom text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-primary-foreground mb-4">
+      <section className="py-16 md:py-24 bg-primary text-primary-foreground">
+        <div className="container text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to Get Started?
           </h2>
-          <p className="text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-8">
-            Whether you need a service or want to offer your skills, Huduma has you covered.
+          <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-8">
+            Join thousands of Kenyans who trust Huduma for their local service needs. 
+            Find verified professionals in your area today.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/services">
-              <Button size="xl" className="bg-card text-foreground hover:bg-card/90 shadow-lg">
-                Find a Service
+              <Button size="lg" variant="secondary" className="w-full sm:w-auto">
+                Find Services
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <Link to="/register?type=provider">
-              <Button size="xl" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+            <Link to="/register">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
                 Become a Provider
               </Button>
             </Link>
