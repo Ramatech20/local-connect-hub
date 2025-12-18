@@ -49,8 +49,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return Promise.resolve({ data: null, error: { message: "Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env" } });
     }
     const redirect = redirectTo ?? `${window.location.origin}/auth/callback`;
-    // Supabase v2 signUp supports passing redirect for email confirmations
-    return supabase.auth.signUp({ email, password }, { emailRedirectTo: redirect } as any);
+    return supabase.auth.signUp({ 
+      email, 
+      password,
+      options: { emailRedirectTo: redirect }
+    });
   };
 
   const signIn = (email: string, password: string) => {
