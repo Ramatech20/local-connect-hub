@@ -28,22 +28,22 @@ const values = [
 
 const team = [
   {
-    name: "James Mwangi",
+    name: "Ramadhan Wambia",
     role: "CEO & Co-founder",
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300",
   },
   {
-    name: "Sarah Kamau",
+    name: "Tavin Leshan",
     role: "CTO & Co-founder",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300",
-  },
-  {
-    name: "Peter Ochieng",
-    role: "Head of Operations",
     image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300",
   },
   {
-    name: "Grace Wanjiku",
+    name: "Wilson Kamau",
+    role: "Head of Operations",
+    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300",
+  },
+  {
+    name: "Joyce Benter",
     role: "Head of Customer Success",
     image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300",
   },
@@ -99,7 +99,7 @@ const About = () => {
               <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">Our Story</h2>
               <div className="space-y-4 text-muted-foreground leading-relaxed">
                 <p>
-                  Huduma started in 2022 when our founders experienced firsthand the challenges 
+                  Huduma started in 2025 when our founders experienced firsthand the challenges 
                   of finding reliable service providers in Eldoret. After countless frustrating 
                   experiences with unreliable workers and unclear pricing, they decided to build 
                   a solution.
@@ -125,7 +125,7 @@ const About = () => {
                 className="rounded-2xl shadow-xl"
               />
               <div className="absolute -bottom-6 -left-6 bg-accent text-accent-foreground p-6 rounded-2xl shadow-lg">
-                <p className="text-3xl font-bold">2022</p>
+                <p className="text-3xl font-bold">2025</p>
                 <p className="text-sm">Founded in Eldoret</p>
               </div>
             </div>

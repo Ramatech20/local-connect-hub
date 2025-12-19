@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, Building } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +17,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<"customer" | "provider">(isProvider ? "provider" : "customer");
   const [step, setStep] = useState(1);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const navigate = useNavigate();
 
   const schema = z.object({
@@ -36,6 +38,10 @@ const Register = () => {
   const { signUp } = useAuth();
 
   const submitCustomer = async (data: FormValues) => {
+    if (!agreeTerms) {
+      toast({ title: "Terms Required", description: "Please agree to the Terms of Service and Privacy Policy." });
+      return;
+    }
     const res = await signUp(data.email, data.password);
     if (res.error) {
       toast({ title: "Sign up failed", description: res.error.message });
@@ -151,13 +157,38 @@ const Register = () => {
                 </div>
               </div>
 
+              {/* Terms Agreement Checkbox */}
+              <div className="flex items-start gap-3 p-4 bg-secondary/50 rounded-xl">
+                <Checkbox
+                  id="terms"
+                  checked={agreeTerms}
+                  onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                  I agree to the{" "}
+                  <Link to="/terms" className="text-primary hover:underline font-medium">
+                    Terms of Service
+                  </Link>
+                  ,{" "}
+                  <Link to="/privacy" className="text-primary hover:underline font-medium">
+                    Privacy Policy
+                  </Link>
+                  , and{" "}
+                  <Link to="/cookies" className="text-primary hover:underline font-medium">
+                    Cookie Policy
+                  </Link>
+                  . I understand that Huduma charges a platform fee on completed bookings.
+                </label>
+              </div>
+
               {userType === "provider" ? (
-                <Button className="w-full" size="lg" onClick={() => setStep(2)}>
+                <Button className="w-full" size="lg" onClick={() => setStep(2)} disabled={!agreeTerms}>
                   Continue
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               ) : (
-                <Button className="w-full" size="lg">
+                <Button className="w-full" size="lg" disabled={!agreeTerms}>
                   Create Account
                 </Button>
               )}
