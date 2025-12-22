@@ -15,6 +15,7 @@ const Footer = () => {
     { name: "About Us", href: "/about" },
     { name: "How It Works", href: "/#how-it-works" },
     { name: "Become a Provider", href: "/register?type=provider" },
+    { name: "Refer & Earn", href: "/referrals" },
     { name: "Blog", href: "/blog" },
     { name: "Contact", href: "/contact" },
     { name: "FAQs", href: "/faqs" },

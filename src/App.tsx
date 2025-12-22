@@ -19,6 +19,7 @@ import Contact from "./pages/Contact";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
+import Referrals from "./pages/Referrals";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/context/AuthProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/referrals" element={<Referrals />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

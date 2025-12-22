@@ -1,24 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, Building } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowRight, Building, Gift } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/context/AuthProvider";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
   const isProvider = searchParams.get("type") === "provider";
+  const refCode = searchParams.get("ref") || "";
   
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<"customer" | "provider">(isProvider ? "provider" : "customer");
   const [step, setStep] = useState(1);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [referralCode, setReferralCode] = useState(refCode);
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
   const navigate = useNavigate();
+
+  // Validate referral code
+  useEffect(() => {
+    const validateReferralCode = async () => {
+      if (!referralCode) {
+        setReferralValid(null);
+        return;
+      }
+      const { data } = await supabase
+        .from("referral_codes")
+        .select("code")
+        .eq("code", referralCode.toUpperCase())
+        .maybeSingle();
+      setReferralValid(!!data);
+    };
+    const timeout = setTimeout(validateReferralCode, 500);
+    return () => clearTimeout(timeout);
+  }, [referralCode]);
 
   const schema = z.object({
     firstName: z.string().min(1, "First name is required"),
@@ -155,6 +177,28 @@ const Register = () => {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+              </div>
+
+              {/* Referral Code Input */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Referral Code (Optional)
+                </label>
+                <div className="relative">
+                  <Gift className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    className={`pl-10 ${referralValid === true ? 'border-green-500' : referralValid === false ? 'border-red-500' : ''}`}
+                    placeholder="Enter referral code"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  />
+                </div>
+                {referralValid === true && (
+                  <p className="text-sm text-green-600 mt-1">Valid referral code! You will receive a reward after your first order.</p>
+                )}
+                {referralValid === false && (
+                  <p className="text-sm text-red-600 mt-1">Invalid referral code</p>
+                )}
               </div>
 
               {/* Terms Agreement Checkbox */}
