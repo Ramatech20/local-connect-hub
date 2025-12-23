@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Gift, Copy, Share2, Users, Wallet, CheckCircle, Clock, ArrowRight } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/safeClient";
 
 const Referrals = () => {
   const { toast } = useToast();
@@ -23,17 +23,31 @@ const Referrals = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const supabase = await getSupabaseClient();
+      if (!supabase) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchReferralData(session.user.id);
       }
       setLoading(false);
     };
+
     checkUser();
   }, []);
 
   const fetchReferralData = async (userId: string) => {
+    const supabase = await getSupabaseClient();
+    if (!supabase) return;
+
     try {
       // Fetch referral code
       const { data: codeData } = await supabase

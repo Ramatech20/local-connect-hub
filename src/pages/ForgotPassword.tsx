@@ -5,8 +5,8 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getSupabaseClient } from "@/integrations/supabase/safeClient";
 
 const schema = z.object({ email: z.string().min(1, "Email required").email("Invalid email") });
 type FormValues = z.infer<typeof schema>;
@@ -18,9 +18,16 @@ const ForgotPassword = () => {
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
     try {
+      const supabase = await getSupabaseClient();
+      if (!supabase) {
+        toast({ title: "Error", description: "Backend is not configured yet." });
+        return;
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: `${window.location.origin}/login`,
       });
+
       if (error) {
         toast({ title: "Error", description: error.message });
       } else {
@@ -34,8 +41,8 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen flex items-center justify-center p-6">
+      <section className="w-full max-w-md">
         <h1 className="text-2xl font-bold mb-4">Reset your password</h1>
         <p className="text-muted-foreground mb-6">Enter your email and we'll send a password reset link.</p>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -50,9 +57,10 @@ const ForgotPassword = () => {
             {loading ? "Sending..." : "Send reset email"}
           </Button>
         </form>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 };
 
 export default ForgotPassword;
+
