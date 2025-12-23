@@ -9,13 +9,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/context/AuthProvider";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/safeClient";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
   const isProvider = searchParams.get("type") === "provider";
   const refCode = searchParams.get("ref") || "";
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<"customer" | "provider">(isProvider ? "provider" : "customer");
   const [step, setStep] = useState(1);
@@ -24,22 +24,36 @@ const Register = () => {
   const [referralValid, setReferralValid] = useState<boolean | null>(null);
   const navigate = useNavigate();
 
-  // Validate referral code
+  // Validate referral code (if backend isn't available yet, keep it neutral)
   useEffect(() => {
+    let cancelled = false;
+
     const validateReferralCode = async () => {
       if (!referralCode) {
-        setReferralValid(null);
+        if (!cancelled) setReferralValid(null);
         return;
       }
+
+      const supabase = await getSupabaseClient();
+      if (!supabase) {
+        if (!cancelled) setReferralValid(null);
+        return;
+      }
+
       const { data } = await supabase
         .from("referral_codes")
         .select("code")
         .eq("code", referralCode.toUpperCase())
         .maybeSingle();
-      setReferralValid(!!data);
+
+      if (!cancelled) setReferralValid(!!data);
     };
-    const timeout = setTimeout(validateReferralCode, 500);
-    return () => clearTimeout(timeout);
+
+    const timeout = window.setTimeout(validateReferralCode, 500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
   }, [referralCode]);
 
   const schema = z.object({
