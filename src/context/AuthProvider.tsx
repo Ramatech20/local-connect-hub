@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -45,9 +45,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = (email: string, password: string, redirectTo?: string) => {
-    if (!isSupabaseConfigured) {
-      return Promise.resolve({ data: null, error: { message: "Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env" } });
-    }
     const redirect = redirectTo ?? `${window.location.origin}/auth/callback`;
     return supabase.auth.signUp({ 
       email, 
@@ -57,11 +54,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signIn = (email: string, password: string) => {
-    if (!isSupabaseConfigured) {
-      return Promise.resolve({ data: null, error: { message: "Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env" } });
-    }
     return supabase.auth.signInWithPassword({ email, password });
   };
+  
   const signOut = () => supabase.auth.signOut();
 
   return (

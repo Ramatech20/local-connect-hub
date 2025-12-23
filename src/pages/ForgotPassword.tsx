@@ -5,7 +5,7 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const schema = z.object({ email: z.string().min(1, "Email required").email("Invalid email") });
@@ -18,12 +18,11 @@ const ForgotPassword = () => {
   const onSubmit = async (data: FormValues) => {
     setLoading(true);
     try {
-      // Supabase v2 API: resetPasswordForEmail
-      const res = await supabase.auth.resetPasswordForEmail(data.email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: `${window.location.origin}/login`,
-      } as any);
-      if ((res as any).error) {
-        toast({ title: "Error", description: (res as any).error.message });
+      });
+      if (error) {
+        toast({ title: "Error", description: error.message });
       } else {
         toast({ title: "Email sent", description: "Check your inbox for password reset instructions." });
       }
