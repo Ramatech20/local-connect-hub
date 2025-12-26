@@ -16,10 +16,16 @@ import {
   CheckCircle
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import ReviewForm from "@/components/reviews/ReviewForm";
+import ReviewList from "@/components/reviews/ReviewList";
+import { useConversations } from "@/hooks/useConversations";
+import { useAuth } from "@/context/AuthProvider";
+import { toast } from "@/hooks/use-toast";
 
-// Mock provider data
+// Mock provider data - will be replaced with real data from providers table
 const providerData = {
   id: "1",
+  user_id: "provider-user-id-placeholder", // This would come from the providers table
   name: "John Kamau",
   profession: "Master Plumber",
   tagline: "Professional plumbing solutions for your home and business",
@@ -47,32 +53,6 @@ const providerData = {
     "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
     "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400",
   ],
-  reviews: [
-    {
-      id: "1",
-      name: "Mary Njeri",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100",
-      rating: 5,
-      date: "2 weeks ago",
-      content: "John did an excellent job fixing our kitchen sink. He was punctual, professional, and cleaned up after the work. Highly recommended!",
-    },
-    {
-      id: "2",
-      name: "David Kimani",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100",
-      rating: 5,
-      date: "1 month ago",
-      content: "Great service! Fixed a stubborn leak that other plumbers couldn't solve. Fair pricing and honest advice.",
-    },
-    {
-      id: "3",
-      name: "Anne Wambui",
-      image: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=100",
-      rating: 4,
-      date: "2 months ago",
-      content: "Very professional and knowledgeable. Installed our water heater perfectly. Only minor delay in arrival but great work overall.",
-    },
-  ],
   availability: [
     { day: "Monday", hours: "8:00 AM - 6:00 PM" },
     { day: "Tuesday", hours: "8:00 AM - 6:00 PM" },
@@ -86,9 +66,12 @@ const providerData = {
 
 const ProviderProfile = () => {
   const { id } = useParams();
+  const { user } = useAuth();
+  const { createConversation } = useConversations();
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   // In a real app, you'd fetch provider data based on id
   const provider = providerData;
@@ -251,47 +234,20 @@ const ProviderProfile = () => {
             <div className="bg-card rounded-2xl p-6 lg:p-8 shadow-card">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-foreground">Reviews</h2>
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 fill-accent text-accent" />
-                  <span className="font-semibold">{provider.rating}</span>
-                  <span className="text-muted-foreground">({provider.reviewCount})</span>
+                {user && (
+                  <Button variant="outline" size="sm" onClick={() => setShowReviewForm(!showReviewForm)}>
+                    {showReviewForm ? "Cancel" : "Write Review"}
+                  </Button>
+                )}
+              </div>
+              
+              {showReviewForm && (
+                <div className="mb-6">
+                  <ReviewForm providerId={provider.user_id} onSuccess={() => setShowReviewForm(false)} />
                 </div>
-              </div>
-              <div className="space-y-6">
-                {provider.reviews.map((review) => (
-                  <div key={review.id} className="pb-6 border-b border-border last:border-0 last:pb-0">
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={review.image}
-                        alt={review.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <h4 className="font-medium text-foreground">{review.name}</h4>
-                          <span className="text-sm text-muted-foreground">{review.date}</span>
-                        </div>
-                        <div className="flex gap-1 mb-2">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < review.rating
-                                  ? "fill-accent text-accent"
-                                  : "fill-muted text-muted"
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <p className="text-muted-foreground">{review.content}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Button variant="outline" className="w-full mt-6">
-                View All Reviews
-              </Button>
+              )}
+              
+              <ReviewList providerId={provider.user_id} />
             </div>
           </div>
 
@@ -343,7 +299,21 @@ const ProviderProfile = () => {
                     Book Now
                   </Button>
                 </Link>
-                <Button variant="outline" className="w-full" size="lg">
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  size="lg"
+                  onClick={async () => {
+                    if (!user) {
+                      toast({ title: "Please log in", description: "You need to be logged in to message providers" });
+                      return;
+                    }
+                    const { error } = await createConversation(provider.user_id);
+                    if (!error) {
+                      toast({ title: "Chat started", description: "Click the message icon to continue chatting" });
+                    }
+                  }}
+                >
                   <MessageSquare className="w-5 h-5 mr-2" />
                   Send Message
                 </Button>
