@@ -10,7 +10,6 @@ import * as z from "zod";
 import { useAuth } from "@/context/AuthProvider";
 import { toast } from "@/hooks/use-toast";
 import { getSupabaseClient } from "@/integrations/supabase/safeClient";
-import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -88,16 +87,19 @@ const Register = () => {
 
     // Wait a moment for auth to complete, then set role
     setTimeout(async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
+      const supabaseClient = await getSupabaseClient();
+      if (!supabaseClient) return;
+
+      const { data: sessionData } = await supabaseClient.auth.getSession();
       if (sessionData?.session?.user) {
         // Set user role
-        await supabase.from("user_roles").insert({
+        await supabaseClient.from("user_roles").insert({
           user_id: sessionData.session.user.id,
           role: userType,
         });
 
         // Update profile with name and phone
-        await supabase.from("profiles").update({
+        await supabaseClient.from("profiles").update({
           full_name: `${data.firstName} ${data.lastName}`,
           phone: data.phone,
         }).eq("user_id", sessionData.session.user.id);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/safeClient";
 
 export type UserRole = "customer" | "provider" | null;
 
@@ -13,6 +13,12 @@ export const useUserRole = () => {
     const fetchRole = async () => {
       if (!user) {
         setRole(null);
+        setLoading(false);
+        return;
+      }
+
+      const supabase = await getSupabaseClient();
+      if (!supabase) {
         setLoading(false);
         return;
       }
@@ -43,6 +49,9 @@ export const useUserRole = () => {
 
   const setUserRole = async (newRole: "customer" | "provider") => {
     if (!user) return { error: new Error("Not authenticated") };
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) return { error: new Error("Backend not available") };
 
     try {
       const { error } = await supabase
