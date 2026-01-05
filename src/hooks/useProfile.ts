@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/safeClient";
 
 export interface Profile {
   id: string;
@@ -23,6 +23,12 @@ export const useProfile = () => {
     const fetchProfile = async () => {
       if (!user) {
         setProfile(null);
+        setLoading(false);
+        return;
+      }
+
+      const supabase = await getSupabaseClient();
+      if (!supabase) {
         setLoading(false);
         return;
       }
@@ -51,6 +57,9 @@ export const useProfile = () => {
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: new Error("Not authenticated") };
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) return { error: new Error("Backend not available") };
 
     try {
       const { data, error } = await supabase

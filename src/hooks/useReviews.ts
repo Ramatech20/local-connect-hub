@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/safeClient";
 
 export interface Review {
   id: string;
@@ -25,6 +25,12 @@ export const useReviews = (providerId?: string) => {
   const fetchReviews = async () => {
     if (!providerId) {
       setReviews([]);
+      setLoading(false);
+      return;
+    }
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
       setLoading(false);
       return;
     }
@@ -82,6 +88,9 @@ export const useReviews = (providerId?: string) => {
       return { error: new Error("Not authenticated or no provider specified") };
     }
 
+    const supabase = await getSupabaseClient();
+    if (!supabase) return { error: new Error("Backend not available") };
+
     try {
       // Check if user already reviewed this provider
       const { data: existing } = await supabase
@@ -121,6 +130,9 @@ export const useReviews = (providerId?: string) => {
   const updateReview = async (reviewId: string, rating: number, comment?: string) => {
     if (!user) return { error: new Error("Not authenticated") };
 
+    const supabase = await getSupabaseClient();
+    if (!supabase) return { error: new Error("Backend not available") };
+
     try {
       const { data, error } = await supabase
         .from("reviews")
@@ -144,6 +156,9 @@ export const useReviews = (providerId?: string) => {
 
   const deleteReview = async (reviewId: string) => {
     if (!user) return { error: new Error("Not authenticated") };
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) return { error: new Error("Backend not available") };
 
     try {
       const { error } = await supabase

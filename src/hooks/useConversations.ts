@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient, AppSupabaseClient } from "@/integrations/supabase/safeClient";
 
 export interface Conversation {
   id: string;
@@ -23,10 +23,17 @@ export const useConversations = () => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef<ReturnType<AppSupabaseClient["channel"]> | null>(null);
 
   const fetchConversations = async () => {
     if (!user) {
       setConversations([]);
+      setLoading(false);
+      return;
+    }
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
       setLoading(false);
       return;
     }
@@ -90,42 +97,65 @@ export const useConversations = () => {
   };
 
   useEffect(() => {
-    fetchConversations();
+    let isMounted = true;
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel("conversations-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "conversations",
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .subscribe();
+    const setup = async () => {
+      await fetchConversations();
+
+      if (!isMounted) return;
+
+      const supabase = await getSupabaseClient();
+      if (!supabase) return;
+
+      // Subscribe to realtime updates
+      const channel = supabase
+        .channel("conversations-updates")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "conversations",
+          },
+          () => {
+            fetchConversations();
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+          },
+          () => {
+            fetchConversations();
+          }
+        )
+        .subscribe();
+
+      channelRef.current = channel;
+    };
+
+    setup();
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      if (channelRef.current) {
+        getSupabaseClient().then((supabase) => {
+          if (supabase && channelRef.current) {
+            supabase.removeChannel(channelRef.current);
+          }
+        });
+      }
     };
   }, [user]);
 
   const createConversation = async (providerId: string) => {
     if (!user) return { error: new Error("Not authenticated") };
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) return { error: new Error("Backend not available") };
 
     try {
       // Check if conversation already exists

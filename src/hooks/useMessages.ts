@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient, AppSupabaseClient } from "@/integrations/supabase/safeClient";
 
 export interface Message {
   id: string;
@@ -15,10 +15,17 @@ export const useMessages = (conversationId: string | null) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const channelRef = useRef<ReturnType<AppSupabaseClient["channel"]> | null>(null);
 
   const fetchMessages = async () => {
     if (!conversationId || !user) {
       setMessages([]);
+      setLoading(false);
+      return;
+    }
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
       setLoading(false);
       return;
     }
@@ -52,37 +59,57 @@ export const useMessages = (conversationId: string | null) => {
   };
 
   useEffect(() => {
-    fetchMessages();
+    let isMounted = true;
 
-    if (!conversationId) return;
+    const setup = async () => {
+      await fetchMessages();
 
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel(`messages-${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new as Message]);
-          
-          // Mark as read if not sender
-          if (user && payload.new.sender_id !== user.id) {
-            supabase
-              .from("messages")
-              .update({ read_at: new Date().toISOString() })
-              .eq("id", payload.new.id);
+      if (!isMounted || !conversationId) return;
+
+      const supabase = await getSupabaseClient();
+      if (!supabase) return;
+
+      // Subscribe to realtime updates
+      const channel = supabase
+        .channel(`messages-${conversationId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `conversation_id=eq.${conversationId}`,
+          },
+          async (payload) => {
+            setMessages((prev) => [...prev, payload.new as Message]);
+
+            // Mark as read if not sender
+            if (user && payload.new.sender_id !== user.id) {
+              const sb = await getSupabaseClient();
+              if (sb) {
+                sb.from("messages")
+                  .update({ read_at: new Date().toISOString() })
+                  .eq("id", payload.new.id);
+              }
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+
+      channelRef.current = channel;
+    };
+
+    setup();
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      if (channelRef.current) {
+        getSupabaseClient().then((supabase) => {
+          if (supabase && channelRef.current) {
+            supabase.removeChannel(channelRef.current);
+          }
+        });
+      }
     };
   }, [conversationId, user]);
 
@@ -90,6 +117,9 @@ export const useMessages = (conversationId: string | null) => {
     if (!conversationId || !user || !content.trim()) {
       return { error: new Error("Invalid message") };
     }
+
+    const supabase = await getSupabaseClient();
+    if (!supabase) return { error: new Error("Backend not available") };
 
     try {
       const { data, error } = await supabase
