@@ -1,9 +1,10 @@
 import express from 'express';
 import { supabase } from '../lib/supabaseClient.js';
+import requireAuth from '../middleware/auth.js';
 const router = express.Router();
 
 // Create a booking (simple availability check placeholder)
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   const { service_id, provider_id, start_time, end_time, customer_id } = req.body;
   if (!service_id || !provider_id || !start_time || !end_time || !customer_id) {
     return res.status(400).json({ error: 'missing required fields' });

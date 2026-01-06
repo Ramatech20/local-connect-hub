@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabase } from '../lib/supabaseClient.js';
+import requireAuth from '../middleware/auth.js';
 const router = express.Router();
 
 router.get('/', async (req, res) => {
@@ -8,7 +9,7 @@ router.get('/', async (req, res) => {
   res.json(data);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   const service = req.body;
   const { data, error } = await supabase.from('services').insert(service).select().single();
   if (error) return res.status(500).json({ error });
