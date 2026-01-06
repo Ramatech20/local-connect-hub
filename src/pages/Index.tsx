@@ -320,7 +320,7 @@ const Index = () => {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 md:py-24 bg-primary/5">
+      <section id="how-it-works" className="py-16 md:py-24 bg-primary/5">
         <div className="container">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
