@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { getSupabaseClient } from "@/integrations/supabase/safeClient";
+import { supabase } from "@/integrations/supabase/client";
 
 type AuthContextType = {
   user: User | null;
@@ -19,76 +19,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | null = null;
-
-    (async () => {
-      const supabase = await getSupabaseClient();
-
-      // If the backend client can't initialize (e.g. env vars missing), don't crash the whole app.
-      if (!supabase) {
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data } = await supabase.auth.getSession();
-        setSession(data.session ?? null);
-        setUser(data.session?.user ?? null);
-      } catch (e) {
-        console.warn("Error getting initial session", e);
-      } finally {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
       }
+    );
 
-      const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-        setSession(nextSession ?? null);
-        setUser(nextSession?.user ?? null);
-        setLoading(false);
-      });
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-      unsubscribe = () => {
-        try {
-          listener.subscription?.unsubscribe();
-        } catch {}
-      };
-    })();
-
-    return () => {
-      unsubscribe?.();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, redirectTo?: string) => {
-    const supabase = await getSupabaseClient();
-    if (!supabase) {
-      return Promise.resolve({ data: null, error: { message: "Backend is not configured yet." } });
-    }
-
-    const redirect = redirectTo ?? `${window.location.origin}/auth/callback`;
+  const signUp = async (email: string, password: string) => {
+    const redirectUrl = `${window.location.origin}/`;
     return supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: redirect },
+      options: { emailRedirectTo: redirectUrl },
     });
   };
 
   const signIn = async (email: string, password: string) => {
-    const supabase = await getSupabaseClient();
-    if (!supabase) {
-      return Promise.resolve({ data: null, error: { message: "Backend is not configured yet." } });
-    }
-
     return supabase.auth.signInWithPassword({ email, password });
   };
 
   const signOut = async () => {
-    const supabase = await getSupabaseClient();
-    if (!supabase) {
-      return Promise.resolve({ error: { message: "Backend is not configured yet." } });
-    }
-
     return supabase.auth.signOut();
   };
 
